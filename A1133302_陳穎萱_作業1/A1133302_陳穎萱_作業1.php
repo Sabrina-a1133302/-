@@ -59,8 +59,8 @@
 </br></br>
 姓名: <input type="text" placeholder="your name" name="nName" value=""></br>
 性別:</br>
-男<input type="radio" name="mGender" value="f" checked>
-女<input type="radio" name="mGender" value="m"></br>
+男<input type="radio" name="mGender" value="m" checked>
+女<input type="radio" name="mGender" value="f"></br>
 收到高大接下來的廣告與通知:</br>
 願意<input type="checkbox" name="mYes" value="yes"> 
 不願意<input type="checkbox" name="mNo" value="no"></br>
