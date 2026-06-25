@@ -1,57 +1,63 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once 'db_config.php'; // 務必確認此檔案中有 $pdo = new PDO(...) 的設定
+require_once 'db_config.php';
 
 // ==========================================
-// 新增：處理從 index.php 傳過來的一般商品加入購物車 (GET)
+// 新增：處理加購品加入購物車邏輯
 // ==========================================
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') == 'add_addon') {
+    $addon_id = intval($_POST['addon_id']);
+    $stmt = $pdo->prepare("SELECT * FROM `addons` WHERE `id` = ?");
+    $stmt->execute([$addon_id]);
+    $addon = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($addon) {
+        if (!isset($_SESSION['cart']['cakes'])) { $_SESSION['cart']['cakes'] = []; }
+        $_SESSION['cart']['cakes'][] = [
+            'name' => '加購：' . $addon['name'], 
+            'price' => intval($addon['price']), 
+            'quantity' => 1,
+            'details' => []
+        ];
+    }
+    header("Location: cart.php"); exit();
+}
+
+// (以下保持您原本的程式碼邏輯)
 if (isset($_GET['action']) && $_GET['action'] == 'add' && isset($_GET['id'])) {
     $product_id = intval($_GET['id']);
-    
-    // 去資料庫搜尋這個 ID 的蛋糕叫什麼名字、多少錢
     $stmt = $pdo->prepare("SELECT * FROM `cake_models` WHERE `id` = ?");
     $stmt->execute([$product_id]);
     $cake = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($cake) {
-        if (!isset($_SESSION['cart']['cakes'])) {
-            $_SESSION['cart']['cakes'] = [];
-        }
-        
-        // 檢查購物車內是否已經有這款一般蛋糕了
+        if (!isset($_SESSION['cart']['cakes'])) { $_SESSION['cart']['cakes'] = []; }
         $found = false;
         foreach ($_SESSION['cart']['cakes'] as $index => $item) {
-            // 如果名字一樣，且不是客製化蛋糕，就直接數量 +1
             if ($item['name'] === $cake['name'] && strpos($item['name'], '客製化') === false) {
                 $_SESSION['cart']['cakes'][$index]['quantity'] += 1;
                 $found = true;
                 break;
             }
         }
-        
-        // 如果購物車裡還沒有這款蛋糕，就新增一筆進去
         if (!$found) {
             $_SESSION['cart']['cakes'][] = [
                 'name' => $cake['name'], 
                 'price' => intval($cake['price']), 
                 'quantity' => 1,
-                'details' => [] // 一般蛋糕沒有客製化細節
+                'details' => []
             ];
         }
     }
-    // 處理完後重導向回 cart.php，清空網址列防止重新整理時重複加入
-    header("Location: cart.php"); 
-    exit();
+    header("Location: cart.php"); exit();
 }
 
-// 1. 刪除商品邏輯
 if (isset($_GET['action']) && $_GET['action'] == 'remove' && isset($_GET['index'])) {
     unset($_SESSION['cart']['cakes'][intval($_GET['index'])]);
     $_SESSION['cart']['cakes'] = array_values($_SESSION['cart']['cakes']);
     header("Location: cart.php"); exit();
 }
 
-// 2. 處理客製化蛋糕加入購物車
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') == 'add_custom_cake') {
     $layers = $_POST['layers'] ?? '15層';
     $filling_input = $_POST['filling'] ?? '鮮奶油';
@@ -64,15 +70,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') == 'add_cus
     
     if (!isset($_SESSION['cart']['cakes'])) $_SESSION['cart']['cakes'] = [];
     $_SESSION['cart']['cakes'][] = [
-        'name' => $name, 
-        'price' => 1000, 
-        'quantity' => 1,
+        'name' => $name, 'price' => 1000, 'quantity' => 1,
         'details' => ['layers'=>$layers, 'filling'=>$filling, 'topping'=>$topping, 'shape'=>$shape]
     ];
     header("Location: cart.php"); exit();
 }
 
-// 3. 修改數量邏輯
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') == 'update_qty') {
     foreach ($_POST['quantity'] ?? [] as $index => $qty) {
         if (isset($_SESSION['cart']['cakes'][$index])) {
@@ -82,21 +85,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') == 'update_
     header("Location: cart.php"); exit();
 }
 
-// 4. 優惠券處理邏輯 (資料庫驗證版)
 $coupon_discount = $_SESSION['coupon_discount'] ?? 0;
-$coupon_msg = $_SESSION['coupon_msg'] ?? ''; 
-unset($_SESSION['coupon_msg']); // 讀取後清除，避免重新整理重複顯示
+$coupon_msg = $_SESSION['coupon_msg'] ?? '';
+unset($_SESSION['coupon_msg']);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply_coupon'])) {
-    global $pdo; // 確保取得資料庫連線
+    global $pdo;
     $code = trim($_POST['coupon_code']);
-    
     $stmt = $pdo->prepare("SELECT * FROM coupons WHERE coupon_name = ? AND expiry_date >= CURDATE()");
     $stmt->execute([$code]);
     $coupon = $stmt->fetch();
 
     if ($coupon) {
-        $coupon_discount = 50; 
+        $coupon_discount = 50;
         $_SESSION['coupon_msg'] = "🎉 兌換成功！已折抵 NT$ 50";
     } else {
         $coupon_discount = 0;
@@ -106,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply_coupon'])) {
     header("Location: cart.php"); exit();
 }
 
-// 動態價格計算函數
 function calculateCakePrice($details) {
     $price = 1000;
     if (strpos($details['layers'] ?? '', '20層') !== false) $price += 200;
@@ -119,7 +119,6 @@ function calculateCakePrice($details) {
     return $price;
 }
 
-// 結算計算
 $cart = $_SESSION['cart']['cakes'] ?? [];
 $subtotal = 0;
 foreach ($cart as $item) {
@@ -149,6 +148,14 @@ $final_total = max(0, ($subtotal - $discount_amount - $coupon_discount) + $shipp
         .total-wrapper { background: #fffaf0; padding: 40px; border-radius: 30px; border: 2px dashed #ffb6c1; margin-top: 30px; }
         input[type="number"] { width: 80px; padding: 10px; border-radius: 10px; border: 2px solid #ffb6c1; font-size: 1.1rem; }
         .checkout-btn { background: #ff69b4; color: white; padding: 20px 40px; border-radius: 25px; text-decoration: none; font-size: 1.3rem; font-weight: bold; }
+        
+        /* 加購區塊樣式 (卡片風格) */
+        .addon-section { margin: 30px 0; padding: 20px; border: 2px solid #ffe4e1; border-radius: 20px; background: #fffaf0; }
+        .addon-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
+        .addon-card { background: white; padding: 15px; border-radius: 15px; border: 1px solid #ffe4e1; width: 180px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .addon-card:hover { transform: translateY(-5px); }
+        .add-btn { width: 100%; padding: 8px; background: #3f9ab3; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+        .add-btn:hover { background: #337a8d; }
     </style>
 </head>
 <body>
@@ -173,6 +180,27 @@ $final_total = max(0, ($subtotal - $discount_amount - $coupon_discount) + $shipp
             <?php } ?>
         </table>
     </form>
+
+    <div class="addon-section">
+        <h3>✨ 加購精選商品</h3>
+        <div class="addon-container">
+            <?php
+            $addons = $pdo->query("SELECT * FROM `addons`")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($addons as $addon): ?>
+                <div class="addon-card">
+                    <div class="addon-info">
+                        <strong><?php echo htmlspecialchars($addon['name']); ?></strong>
+                        <p style="color: #ff69b4; margin: 5px 0;">NT$ <?php echo $addon['price']; ?></p>
+                    </div>
+                    <form action="cart.php" method="POST">
+                        <input type="hidden" name="action" value="add_addon">
+                        <input type="hidden" name="addon_id" value="<?php echo $addon['id']; ?>">
+                        <button type="submit" class="add-btn">+ 加入購物車</button>
+                    </form>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
 
     <div class="total-wrapper">
         <p>顧客身分：<?php echo ucfirst($role); ?></p>
