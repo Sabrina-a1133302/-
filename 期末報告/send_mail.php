@@ -11,7 +11,7 @@ require 'PHPMailer/src/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function send_order_notification($to_email, $username, $order_id, $status) {
+function send_order_notification($email, $name, $id, $status) {
     $mail = new PHPMailer(true);
 
     try {
