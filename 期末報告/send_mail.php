@@ -19,14 +19,14 @@ function send_order_notification($to_email, $username, $order_id, $status) {
         $mail->isSMTP();                                            // 使用 SMTP 發信
         $mail->Host       = 'smtp.gmail.com';                     // Gmail SMTP 伺服器
         $mail->SMTPAuth   = true;                                   // 開啟 SMTP 驗證
-        $mail->Username   = '你的Gmail帳號@gmail.com';             // 您的 Gmail 帳號
-        $mail->Password   = '你的Gmail應用程式16位密碼';           // 您的 Google 應用程式密碼
+        $mail->Username   = 'lantengjing@gmail.com';             // 您的 Gmail 帳號
+        $mail->Password   = 'zphy lvui otyn ixrf';           // 您的 Google 應用程式密碼
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;         // 啟用 TLS 加密
         $mail->Port       = 587;                                    // TLS 連接埠
         $mail->CharSet    = 'UTF-8';                                // 設定編碼防止中文亂碼
 
         // 3. 收件人與寄件人設定
-        $mail->setFrom('你的Gmail帳號@gmail.com', 'Layer Master 智能平台');
+        $mail->setFrom('lantengjing331@gmail.com', 'Layer Master 智能平台');
         $mail->addAddress($to_email, $username);                    // 新增收件人
 
         // 4. 動態產出郵件主旨與文字內容 (依據企劃書動態觸發)
