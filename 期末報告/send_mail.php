@@ -27,15 +27,15 @@ function send_order_notification($email, $name, $id, $status) {
 
         // 3. 收件人與寄件人設定
         $mail->setFrom('lantengjing331@gmail.com', 'Layer Master 智能平台');
-        $mail->addAddress($to_email, $username);                    // 新增收件人
+        $mail->addAddress($email, $name);                    // 新增收件人
 
         // 4. 動態產出郵件主旨與文字內容 (依據企劃書動態觸發)
         if ($status === 'completed') {
             $mail->Subject = '🎂 Layer Master：您的客製化千層蛋糕已製作完成！';
-            $mail->Body    = "親愛的會員 {$username} 您好：\n\n您在 Layer Master 訂購的客製化千層蛋糕（訂單編號：#{$order_id}）目前已由烘焙師製作完成，並安排出貨！\n\n感謝您的支持，期待您開啟這份精心渲染的美味結構！\n\n---\nLayer Master 第25組專題研發團隊";
+            $mail->Body    = "親愛的會員 {$name} 您好：\n\n您在 Layer Master 訂購的客製化千層蛋糕（訂單編號：#{$order_id}）目前已由烘焙師製作完成，並安排出貨！\n\n感謝您的支持，期待您開啟這份精心渲染的美味結構！\n\n---\nLayer Master 第25組專題研發團隊";
         } else {
             $mail->Subject = '📦 Layer Master：您的蛋糕訂單確認通知';
-            $mail->Body    = "親愛的會員 {$username} 您好：\n\n感謝您使用 Layer Master 智能平台設計專屬千層蛋糕。\n我們已收到您的訂單（編號：#{$order_id}），系統正在為您排單製作。\n\n您隨時可以登入「歷史訂單與配方追蹤」頁面查看最新進度。\n\n---\nLayer Master 第25組專題研發團隊";
+            $mail->Body    = "親愛的會員 {$name} 您好：\n\n感謝您使用 Layer Master 智能平台設計專屬千層蛋糕。\n我們已收到您的訂單（編號：#{$order_id}），系統正在為您排單製作。\n\n您隨時可以登入「歷史訂單與配方追蹤」頁面查看最新進度。\n\n---\nLayer Master 第25組專題研發團隊";
         }
 
         // 5. 執行發送
